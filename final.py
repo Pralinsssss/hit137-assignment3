@@ -209,7 +209,7 @@ class AIGUI:
         
         self.oop_text = tk.Text(oop_frame, height=8, wrap='word')
         self.oop_text.pack(padx=5, pady=5, fill="both", expand=True)
-        self.oop_text.insert("1.0", "OOP concepts explanation will appear here...\n\nThis section is ready for your team member to add OOP explanations.")
+        self.oop_text.insert("1.0", "OOP concepts explanation will appear here...\n\nThis section is ready to add OOP explanations.")
 
     def on_input_type_changed(self):
         """Show/hide browse button based on input type"""
