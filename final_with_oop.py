@@ -1,79 +1,45 @@
 """
-# OOP Concepts Explanation
+OOP Concepts Explanation
 
-## 1. Inheritance
-Inheritance is a principle of Object-Oriented Programming that allows a child class to inherit attributes and methods from a parent class. This promotes code reuse and establishes a logical hierarchy between classes.
+1. Inheritance
+Inheritance allows a child class to inherit attributes and methods from a parent class. This promotes code reuse and establishes a logical hierarchy.
 
-**How we used it in our project:**
-- The project defines two reusable parent classes:
-  - `Loggable`: Provides a reusable `log()` method.
-  - `Configurable`: Manages private configuration options (`__options`) using encapsulated property access.
-- `ModelAdapter(Loggable, Configurable)` is an abstract parent class that leverages multiple inheritance to combine logging and configuration features. It defines abstract methods (`load`, `run`, and `info`) that child classes must implement.
-- Child classes:
-  - `TextSentimentAdapter(ModelAdapter)`: Overrides methods for loading and running a Hugging Face text sentiment model.
-  - `ImageClassifierAdapter(ModelAdapter)`: Overrides methods for a Hugging Face image classification model.
-- **Benefits**:
-  - Encourages code reuse: Logging and configuration logic are defined once and reused across classes.
-  - Ensures consistency: All adapters share a common interface (`load`, `run`, `info`), simplifying interaction with the Controller and GUI.
-  - Supports extensibility: New tasks can be added by creating new child classes without modifying existing code.
+How we used it:
+- TextClassifier and ImageClassifier both follow the same pattern but handle different data types
+- Both classes have load() and predict() methods with similar structure
+- Common functionality like model loading and prediction is standardized
 
-## 2. Decorator
-In Python, a decorator is a design pattern that modifies a function or method's behavior without altering its code. Decorators are applied using the `@` symbol and are commonly used for logging, validation, or error handling.
+2. Decorator
+Decorators modify function behavior without altering its code. Used for logging, validation, or timing.
 
-**How we used it in our project:**
-- Three custom decorators are used in `decorators.py`:
-  - `@log_action(action_name)`: Tracks user actions, such as clicking the Run button or selecting an image.
-  - `@require_input(err_msg)`: Validates that the user has provided text or selected an image before running the model.
-  - `@guard_exceptions(title)`: Wraps methods in a try/except block, displaying user-friendly error dialogs instead of crashing, while logging the traceback.
-- **Benefits**:
-  - Code reuse: Eliminates redundant code for error handling, logging, or validation across multiple functions.
-  - Cleaner code: Separates core logic (e.g., running a model) from auxiliary concerns (e.g., logging, validation).
-  - Improved readability: Decorators clearly indicate additional behaviors applied to a method.
+How we used it:
+- @measure_time: Tracks execution time of model predictions
+- @log_call: Logs method calls with model information
+- These decorators add cross-cutting concerns without cluttering core logic
 
-## 3. Encapsulation
-Encapsulation is an OOP principle that hides a class's internal details, storing data in private or protected attributes and controlling access through methods or properties. This ensures data integrity, prevents unintended modifications, and simplifies maintenance.
+3. Encapsulation
+Encapsulation hides internal details by using private attributes and controlled access through methods.
 
-**How we used it in our project:**
-- In `Configurable`, model settings are stored in a private attribute `__options`, accessible only through `@property` getters and setters.
-- In the GUI (`gui.py`), the current input is stored in a protected attribute `_current_input` instead of exposing the raw Tkinter widget state.
-- **Benefits**:
-  - Data security: Prevents external code from accidentally modifying private configuration or widget states.
-  - Maintainability: Internal logic changes do not affect other parts of the program as long as the public interface remains unchanged.
-  - Cleaner design: Separates data storage from data access logic.
+How we used it:
+- _model_name, _pipeline, _loaded are protected attributes
+- Internal state is managed through load() and predict() methods
+- External code interacts through public interface only
 
-## 4. Overriding
-Method overriding occurs when a child class redefines a method inherited from a parent class, keeping the same name and parameters but providing a different implementation.
+4. Overriding
+Method overriding redefines inherited methods in child classes with different implementations.
 
-**How we used it in our project:**
-- The abstract parent class `ModelAdapter` in `models.py` defines abstract methods:
-  - `load(self)`
-  - `run(self, data)`
-  - `info(self)`
-- Child classes override these methods:
-  - `TextSentimentAdapter(ModelAdapter)`:
-    - `load()`: Loads the Hugging Face DistilBERT model for sentiment analysis.
-    - `run(data)`: Performs text sentiment prediction, returning a label and score.
-    - `info()`: Provides details about the text model.
-  - `ImageClassifierAdapter(ModelAdapter)`:
-    - `load()`: Loads the Hugging Face ViT model for image classification.
-    - `run(data)`: Processes an image and returns its predicted label and score.
-    - `info()`: Provides details about the vision model.
-- **Benefits**:
-  - Ensures consistency: All adapters use the same method names (`load`, `run`, `info`), allowing the Controller to interact with them uniformly.
-  - Enables custom behavior: Text and image models implement the same methods differently.
-  - Facilitates extensibility: New models can be added by overriding these methods in new subclasses.
+How we used it:
+- TextClassifier and ImageClassifier both implement predict() differently
+- Text handles text input, Image handles image paths
+- Same method name, different functionality based on data type
 
-## 5. Polymorphism
-Polymorphism allows different classes to share the same interface while providing distinct implementations of a method.
+5. Polymorphism
+Polymorphism allows different classes to share the same interface while providing distinct implementations.
 
-**How we used it in our project:**
-- The `ModelAdapter` class defines an abstract method `run(data)`.
-  - `TextSentimentAdapter` implements `run(data: str)` for text input.
-  - `ImageClassifierAdapter` implements `run(data: Image)` for image input.
-- **Benefits**:
-  - The Controller can call `adapter.run()` without knowing whether the input is text or an image.
-  - Extensibility: New adapters can be added without modifying the Controller or GUI code.
-  - Clean architecture: Simplifies integration of new models while maintaining a consistent interface.
+How we used it:
+- Both classifiers have predict() method but work with different data types
+- GUI can call predict() without knowing specific model type
+- New model types can be added without changing GUI code
 """
 
 import tkinter as tk
@@ -92,7 +58,7 @@ def measure_time(func):
         start = time.time()
         result = func(*args, **kwargs)
         end = time.time()
-        print(f"[TIMER] {func.__name__} took {end-start:.2f}s")
+        print(f"TIMER {func.__name__} took {end-start:.2f}s")
         return result
     return wrapper
 
@@ -100,7 +66,7 @@ def log_call(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         model_name = getattr(args[0], '_model_name', 'unknown') if args else 'unknown'
-        print(f"[LOG] Calling {func.__name__} on {model_name}")
+        print(f"LOG Calling {func.__name__} on {model_name}")
         return func(*args, **kwargs)
     return wrapper
 
@@ -208,7 +174,7 @@ class AIGUI:
         self.create_model_selection_widgets()
         self.create_input_widgets()
         self.create_output_widgets()
-        self.create_info_widgets()  
+        self.create_info_widgets()
 
     def create_model_selection_widgets(self):
         ttk.Label(self.model_frame, text="Select Model:").grid(row=0, column=0, padx=5, pady=5, sticky='w')
@@ -245,7 +211,7 @@ class AIGUI:
         self.browse_button = ttk.Button(input_type_frame, text="Browse Image", 
                                       command=self.browse_file)
         self.browse_button.pack(side="left", padx=10)
-        self.browse_button.pack_forget()  # Hide initially
+        self.browse_button.pack_forget()
 
         self.input_text = tk.Text(self.input_frame, height=6, wrap='word')
         self.input_text.pack(padx=5, pady=5, fill="x")
@@ -271,7 +237,6 @@ class AIGUI:
                   command=self.clear_output).pack(side="left", padx=10)
 
     def create_info_widgets(self):
-        """Create split info section with Model Info and OOP Concepts side by side"""
         info_container = ttk.Frame(self.info_frame)
         info_container.pack(fill="both", expand=True, padx=5, pady=5)
         
@@ -287,14 +252,42 @@ class AIGUI:
         
         self.oop_text = tk.Text(oop_frame, height=8, wrap='word')
         self.oop_text.pack(padx=5, pady=5, fill="both", expand=True)
-        self.oop_text.insert("1.0", "OOP concepts explanation will appear here...\n\nThis section is ready for your team member to add OOP explanations.")
+        
+        oop_explanation = """
+OOP Concepts Implemented:
+
+1. Inheritance
+- TextClassifier and ImageClassifier follow same structure
+- Both have load() and predict() methods
+- Standardized model interface
+
+2. Decorators
+- @measure_time: Tracks prediction execution time
+- @log_call: Logs method calls with model info
+- Cross-cutting concerns without code clutter
+
+3. Encapsulation
+- _model_name, _pipeline, _loaded as protected attributes
+- Internal state managed through methods
+- Public interface for external interaction
+
+4. Overriding
+- Both classifiers implement predict() differently
+- Text handles text, Image handles images
+- Same method name, different functionality
+
+5. Polymorphism
+- Both have predict() but work with different data
+- GUI calls predict() without knowing model type
+- Extensible for new model types
+"""
+        self.oop_text.insert("1.0", oop_explanation)
 
     def on_input_type_changed(self):
-        """Show/hide browse button based on input type"""
         if self.input_type.get() == "Image":
             self.browse_button.pack(side="left", padx=10)
             self.input_text.delete("1.0", tk.END)
-            self.input_text.insert("1.0", "Click 'Browse Image' to select an image file")
+            self.input_text.insert("1.0", "Click Browse Image to select an image file")
         else:
             self.browse_button.pack_forget()
             if "Browse" in self.input_text.get("1.0", "1.50"):
@@ -327,7 +320,6 @@ class AIGUI:
                 self.model_instances[selected] = model_instance
                 self.current_model = model_instance
                 
-                # Update GUI in main thread
                 self.root.after(0, lambda: self.on_model_loaded(selected, model_instance))
                 
             except Exception as e:
@@ -336,7 +328,6 @@ class AIGUI:
         threading.Thread(target=load_model_thread, daemon=True).start()
 
     def on_model_loaded(self, model_name, model_instance):
-        """Callback when model is successfully loaded"""
         self.is_loading = False
         self.load_btn.config(state="normal")
         self.status_label.config(text=f"{model_name} loaded successfully!")
@@ -352,7 +343,6 @@ class AIGUI:
         messagebox.showinfo("Model Loaded", f"{model_name} is ready to use!")
 
     def on_model_load_error(self, model_name, error):
-        """Callback when model loading fails"""
         self.is_loading = False
         self.load_btn.config(state="normal")
         self.status_label.config(text=f"Failed to load {model_name}")
@@ -363,7 +353,6 @@ class AIGUI:
         messagebox.showerror("Load Error", f"Failed to load {model_name}:\n\n{error}")
 
     def load_all_models(self):
-        """Load all available models"""
         self.status_label.config(text="Loading all models...")
         self.model_info_text.delete("1.0", tk.END)
         self.model_info_text.insert("1.0", "Loading all models...\nThis may take a few minutes...\n\n")
@@ -388,7 +377,6 @@ class AIGUI:
         threading.Thread(target=load_all_thread, daemon=True).start()
 
     def on_all_models_loaded(self, results):
-        """Callback when all models are loaded"""
         self.status_label.config(text="All models loaded!")
         self.model_info_text.delete("1.0", tk.END)
         self.model_info_text.insert("1.0", "ALL MODELS STATUS:\n\n" + "\n".join(results))
@@ -424,14 +412,12 @@ class AIGUI:
         threading.Thread(target=run_model_thread, daemon=True).start()
 
     def on_model_result(self, model_name, result):
-        """Callback when model prediction completes"""
         self.run_selected_btn.config(state="normal")
         self.output_text.delete("1.0", tk.END)
         self.output_text.insert("1.0", f"{model_name} RESULTS:\n{'='*40}\n{result}\n\n")
         self.output_text.insert(tk.END, f"\nPrediction completed successfully!")
 
     def on_model_error(self, error):
-        """Callback when model prediction fails"""
         self.run_selected_btn.config(state="normal")
         self.output_text.delete("1.0", tk.END)
         self.output_text.insert("1.0", f"ERROR:\n{'='*40}\n{error}\n\n")
@@ -472,13 +458,12 @@ class AIGUI:
         threading.Thread(target=run_all_models_thread, daemon=True).start()
 
     def on_all_models_result(self, results):
-        """Callback when all models complete"""
         self.run_all_btn.config(state="normal")
         self.output_text.delete("1.0", tk.END)
         
         for name, result, error in results:
             self.output_text.insert(tk.END, f"{name}:\n")
-            self.output_text.insert(tk.END, "─" * 50 + "\n")
+            self.output_text.insert(tk.END, "=" * 50 + "\n")
             if error:
                 self.output_text.insert(tk.END, f"Error: {error}\n")
             else:
@@ -502,15 +487,15 @@ class AIGUI:
 
 Integrated with Hugging Face Transformers:
 
-• Text Classification: DistilBERT sentiment analysis
-• Image Classification: Vision Transformer (ViT)
+Text Classification: DistilBERT sentiment analysis
+Image Classification: Vision Transformer (ViT)
 
 Features:
-✅ Modern GUI with Tkinter
-✅ Multi-threading for responsive UI
-✅ Error handling and user feedback
-✅ Model caching for performance
-✅ Real-time progress updates
+Modern GUI with Tkinter
+Multi-threading for responsive UI
+Error handling and user feedback
+Model caching for performance
+Real-time progress updates
 
 Built with Python and Transformers"""
         messagebox.showinfo("About", about_text)
@@ -519,7 +504,6 @@ if __name__ == "__main__":
     root = tk.Tk()
     app = AIGUI(root)
     
-    # Startup message
     print("AI Model GUI Starting...")
     print("Models will download on first use (requires internet)")
     print("Please be patient during initial model loading")
